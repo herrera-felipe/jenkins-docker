@@ -9,7 +9,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'docker build -t ozdormu/jenkins-docker-hub .'
+        sh 'docker build -t ozdormu/jenkins-docker-hub:1.0 .'
       }
     }
     stage('Login') {
@@ -19,7 +19,8 @@ pipeline {
     }
     stage('Push') {
       steps {
-        sh 'docker push ozdormu/jenkins-docker-hub'
+        sh 'docker tag jenkins-docker-hub:1.0 ozdormu/jenkins-docker-hub:1.0'
+        sh 'docker push ozdormu/jenkins-docker-hub:1.0'
       }
     }
   }
