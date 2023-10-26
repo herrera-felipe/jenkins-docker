@@ -1,38 +1,31 @@
 pipeline {
-    agent any
-    
-    environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub')
-        DOCKER_IMAGE_NAME = "jenkins-docker-hub"
-        DOCKER_IMAGE_VERSION = "1.0"
+  agent any
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+  }
+  stages {
+    stage('Build') {
+      steps {
+        sh 'docker build -t ozdormu/jenkins-docker-hub .'
+      }
     }
-
-    stages {
-        stage('Build Image') {
-            steps {
-                script {
-                    sh "docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION ."
-                }
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                script {
-                    sh "docker run -d --name $DOCKER_IMAGE_NAME-container $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION"
-                }
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    withDockerServer([uri: "https://registry.hub.docker.com", credentialsId: DOCKER_HUB_CREDENTIALS]) {
-                        sh "docker tag $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION ozdormu/jenkins-docker-hub:$DOCKER_IMAGE_VERSION"
-                        sh "docker push oozdormu/jenkins-docker-hub:$DOCKER_IMAGE_VERSION"
-                    }
-                }
-            }
-        }
+    stage('Login') {
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+      }
     }
+    stage('Push') {
+      steps {
+        sh 'docker push ozdormu/jenkins-docker-hub'
+      }
+    }
+  }
+  post {
+    always {
+      sh 'docker logout'
+    }
+  }
 }
